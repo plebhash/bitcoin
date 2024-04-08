@@ -285,7 +285,7 @@ Although for the Template Provider role this is not relevant.
 
 #### Creating the signet
 
-See also [signet/README.md](../../contrib/signet/README.md)
+See also [signet/README.md](https://github.com/Sjors/bitcoin/blob/sv2/contrib/signet/README.md)
 
 If you use the default signet for anything else, create a fresh data directory.
 
