@@ -32,6 +32,7 @@
 #include <node/context.h>
 #include <node/interface_ui.h>
 #include <node/mini_miner.h>
+#include <node/miner.h>
 #include <node/transaction.h>
 #include <policy/feerate.h>
 #include <policy/fees.h>
@@ -48,6 +49,7 @@
 #include <uint256.h>
 #include <univalue.h>
 #include <util/check.h>
+#include <util/moneystr.h>
 #include <util/result.h>
 #include <util/signalinterrupt.h>
 #include <util/string.h>
@@ -73,6 +75,7 @@ using interfaces::MakeSignalHandler;
 using interfaces::Mining;
 using interfaces::Node;
 using interfaces::WalletLoader;
+using node::BlockAssembler;
 
 namespace node {
 // All members of the classes in this namespace are intentionally public, as the
@@ -854,6 +857,20 @@ public:
     {
         LOCK(::cs_main);
         return TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, chainman().ActiveChain().Tip(), /*fCheckPOW=*/false, check_merkle_root);
+    }
+
+    std::unique_ptr<CBlockTemplate> createNewBlock(const CScript& scriptPubKeyIn, bool use_mempool) override
+    {
+        BlockAssembler::Options options;
+
+        // Block resource limits
+        options.nBlockMaxWeight = gArgs.GetIntArg("-blockmaxweight", options.nBlockMaxWeight);
+        if (const auto blockmintxfee{gArgs.GetArg("-blockmintxfee")}) {
+            if (const auto parsed{ParseMoney(*blockmintxfee)}) options.blockMinFeeRate = CFeeRate{*parsed};
+        }
+
+        LOCK(::cs_main);
+        return BlockAssembler{chainman().ActiveChainstate(), use_mempool ? context()->mempool.get() : nullptr, options}.CreateNewBlock(scriptPubKeyIn);
     }
 
     NodeContext* context() override { return &m_node; }
