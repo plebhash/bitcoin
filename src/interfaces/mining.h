@@ -47,7 +47,7 @@ public:
     virtual unsigned int getTransactionsUpdated() = 0;
 
     /** Construct a new block template with coinbase to scriptPubKeyIn */
-    virtual std::unique_ptr<node::CBlockTemplate> createNewBlock(const CScript& scriptPubKeyIn, bool use_mempool = true) = 0;
+    virtual std::unique_ptr<node::CBlockTemplate> createNewBlock(const CScript& scriptPubKeyIn, bool use_mempool = true, size_t coinbase_output_max_additional_size = 0) = 0;
 
     /**
      * Check a block is completely valid from start to finish.

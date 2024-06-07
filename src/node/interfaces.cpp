@@ -874,12 +874,22 @@ public:
         return TestBlockValidity(state, chainman().GetParams(), chainman().ActiveChainstate(), block, chainman().ActiveChain().Tip(), /*fCheckPOW=*/false, check_merkle_root);
     }
 
-    std::unique_ptr<CBlockTemplate> createNewBlock(const CScript& scriptPubKeyIn, bool use_mempool) override
+    std::unique_ptr<CBlockTemplate> createNewBlock(const CScript& scriptPubKeyIn, bool use_mempool, size_t coinbase_output_max_additional_size) override
     {
         BlockAssembler::Options options;
 
-        // Block resource limits
-        options.nBlockMaxWeight = gArgs.GetIntArg("-blockmaxweight", options.nBlockMaxWeight);
+        /** Reducing the size of nBlockMaxWeight by the coinbase output additional
+         * size allows the miner extra weighted bytes in their coinbase space.
+         */
+        options.nBlockMaxWeight = gArgs.GetIntArg("-blockmaxweight", options.nBlockMaxWeight) - coinbase_output_max_additional_size;
+
+        /*
+         * TODO: constrain allowed values of -blockmaxweight at startup,
+         *       such that it can't be less than the max coinbase_output_max_additional_size
+         *       allowed by the stratum v2 spec.
+         */
+        Assume(options.nBlockMaxWeight > 0);
+
         if (const auto blockmintxfee{gArgs.GetArg("-blockmintxfee")}) {
             if (const auto parsed{ParseMoney(*blockmintxfee)}) options.blockMinFeeRate = CFeeRate{*parsed};
         }
