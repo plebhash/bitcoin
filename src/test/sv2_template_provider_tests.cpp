@@ -1,6 +1,7 @@
 #include <addresstype.h>
 #include <boost/test/unit_test.hpp>
 #include <common/sv2_messages.h>
+#include <interfaces/mining.h>
 #include <node/transaction.h>
 #include <node/sv2_template_provider.h>
 #include <test/util/net.h>
@@ -24,9 +25,9 @@ private:
 public:
     std::unique_ptr<Sv2TemplateProvider> m_tp; //!< Sv2TemplateProvider being tested
 
-    TPTester(ChainstateManager& chainman, CTxMemPool& mempool)
+    TPTester(interfaces::Mining& mining)
     {
-        m_tp = std::make_unique<Sv2TemplateProvider>(chainman, mempool);
+        m_tp = std::make_unique<Sv2TemplateProvider>(mining);
     }
 
     bool start()
@@ -176,7 +177,8 @@ public:
 
 BOOST_AUTO_TEST_CASE(client_tests)
 {
-    TPTester tester{*m_node.chainman, *m_node.mempool};
+    auto mining{interfaces::MakeMining(m_node)};
+    TPTester tester{*mining};
     BOOST_REQUIRE(tester.start());
 
     BOOST_REQUIRE(!tester.IsConnected());

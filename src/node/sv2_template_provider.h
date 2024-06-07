@@ -5,15 +5,13 @@
 #include <common/sv2_noise.h>
 #include <common/sv2_messages.h>
 #include <common/sv2_transport.h>
+#include <interfaces/mining.h>
 #include <logging.h>
 #include <net.h>
 #include <node/miner.h>
 #include <util/sock.h>
 #include <util/time.h>
 #include <streams.h>
-
-class ChainstateManager;
-class CTxMemPool;
 
 struct Sv2Client
 {
@@ -138,12 +136,10 @@ private:
     CThreadInterrupt m_interrupt_sv2;
 
     /**
-    * ChainstateManager and CTxMemPool are both used to build new valid blocks,
-    * getting the best known block hash and checking whether the node is still
-    * in IBD.
+    * The Mining interface is used to build new valid blocks, get the best known
+    * block hash and to check whether the node is still in IBD.
     */
-    ChainstateManager& m_chainman;
-    CTxMemPool& m_mempool;
+    interfaces::Mining& m_mining;
 
     /**
      * A list of all connected stratum v2 clients.
@@ -205,7 +201,7 @@ public:
 
     XOnlyPubKey m_authority_pubkey;
 
-    explicit Sv2TemplateProvider(ChainstateManager& chainman, CTxMemPool& mempool);
+    explicit Sv2TemplateProvider(interfaces::Mining& mining);
 
     ~Sv2TemplateProvider();
     /**

@@ -25,7 +25,7 @@ using node::Sv2RequestTransactionDataErrorMsg;
 using node::Sv2SubmitSolutionMsg;
 
 
-Sv2TemplateProvider::Sv2TemplateProvider(ChainstateManager& chainman, CTxMemPool& mempool) : m_chainman{chainman}, m_mempool{mempool}
+Sv2TemplateProvider::Sv2TemplateProvider(interfaces::Mining& mining) : m_mining{mining}
 {
     // Read static key if cached
     try {
@@ -249,7 +249,7 @@ void Sv2TemplateProvider::ThreadSv2Handler()
         }
 
         bool best_block_changed = [this]() {
-            if (m_chainman.IsInitialBlockDownload() && gArgs.GetChainType() != ChainType::SIGNET) {
+            if (m_mining.isInitialBlockDownload() && gArgs.GetChainType() != ChainType::SIGNET) {
                 // Keep m_best_prev_hash unset during IBD to avoid pushing outdated
                 // templates. Except for signet, because we might be the only miner.
                 return false;
@@ -269,7 +269,7 @@ void Sv2TemplateProvider::ThreadSv2Handler()
         /** TODO: only look for mempool updates that (likely) impact the next block.
          *        See `doc/stratum-v2.md#mempool-monitoring`
          */
-        mempool_last_update = m_mempool.GetTransactionsUpdated();
+        mempool_last_update = m_mining.getTransactionsUpdated();
         bool should_make_template = false;
 
         if (best_block_changed) {
@@ -466,16 +466,8 @@ Sv2TemplateProvider::NewWorkSet Sv2TemplateProvider::BuildNewWorkSet(bool future
 {
     AssertLockHeld(m_tp_mutex);
 
-    BlockAssembler::Options options;
-
-    // Reducing the size of nBlockMaxWeight by the coinbase output additional
-    // size allows the miner extra weighted bytes in their coinbase space.
-    Assume(coinbase_output_max_additional_size <= MAX_BLOCK_WEIGHT);
-    options.nBlockMaxWeight = MAX_BLOCK_WEIGHT - coinbase_output_max_additional_size;
-    options.blockMinFeeRate = CFeeRate(DEFAULT_BLOCK_MIN_TX_FEE);
-
     const auto time_start{SteadyClock::now()};
-    auto blocktemplate = BlockAssembler(m_chainman.ActiveChainstate(), &m_mempool, options).CreateNewBlock(CScript());
+    auto blocktemplate = m_mining.createNewBlock(CScript(), /*use_mempool=*/true, coinbase_output_max_additional_size);
     LogPrintLevel(BCLog::SV2, BCLog::Level::Trace, "Assemble template: %.2fms\n",
         Ticks<MillisecondsDouble>(SteadyClock::now() - time_start));
     Sv2NewTemplateMsg new_template{blocktemplate->block, m_template_id, future_template};
@@ -721,9 +713,7 @@ void Sv2TemplateProvider::ProcessSv2Message(const Sv2NetMsg& sv2_net_msg, Sv2Cli
         auto blockptr = std::make_shared<CBlock>(std::move(block));
         bool new_block{true};
 
-        m_chainman.ProcessNewBlock(blockptr, true /* force_processing */, true /* min_pow_checked */, &new_block);
-
-
+        m_mining.processNewBlock(blockptr, &new_block);
         break;
     }
 
