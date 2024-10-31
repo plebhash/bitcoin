@@ -489,9 +489,14 @@ public:
         nDefaultPort = 38333;
         nPruneAfterHeight = 1000;
 
-        genesis = CreateGenesisBlock(1598918400, 52613770, 0x1e0377ae, 1, 50 * COIN);
+        // todo: find nonce + timestamp for valid genesis block, for now only nbits is correct
+        genesis = CreateGenesisBlock(1598918400, 52613770, 0x1b00c828, 1, 50 * COIN); // blocks every ~2 min at 3 TH/s
+
         consensus.hashGenesisBlock = genesis.GetHash();
-        assert(consensus.hashGenesisBlock == uint256{"00000008819873e925422c1ff0f99f7cc9bbb232af63a077a480a3633bee1ef6"});
+
+        // todo: find valid genesis block
+        // assert(consensus.hashGenesisBlock == uint256{"df88e6f46add668ef436f69fdb6ebf2f6f47dd77fb8473d3c52791ab5528dbae"});
+
         assert(genesis.hashMerkleRoot == uint256{"4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"});
 
         vFixedSeeds.clear();
